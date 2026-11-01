@@ -210,7 +210,7 @@ npx serve .        # or: python3 -m http.server 8000
 
 | Page | What it does |
 | --- | --- |
-| `test-audio.html` | OSS workflow: initialize, detect latency (native + pulse check), calibrate, manual tap sync, sync status |
+| `test-audio.html` | OSS workflow: initialize, test tone, start sync, detect latency (native), calibrate (native + pulse check), manual tap sync, sync status — recommended button sequence listed on the page |
 | `test-bluetooth-latency.html` | Flash + click alignment test. A flash and a click fire simultaneously; adjust the slider until they feel aligned. The result is saved to `localStorage.btAudioDelayMs` — this measures the **real** Bluetooth delay that `outputLatency` underreports |
 | `test-av-sync.html` | Local video A/V sync: plays a video file through a canvas with a configurable frame delay so the picture matches Bluetooth-delayed audio. Use the delay from `test-bluetooth-latency.html` |
 | `test-tap-bounce.html` | Tap-to-bounce demo: tap the screen (or Space) and the ball bounces with a click. With compensation ON, the visual bounce is delayed by the measured delay from `localStorage.btAudioDelayMs` so it coincides with the Bluetooth-delayed click you actually hear — toggle OFF to feel the desync |
@@ -237,6 +237,7 @@ Methods:
    - `stopSync(): Promise<void>` - Stop synchronization
    - `getSyncStatus(): SyncStatus` - Get current sync status
    - `getCurrentLatency(): number` - Get current latency in seconds
+   - `updateLatency(measurement: LatencyMeasurement): void` - Feed an externally measured latency (your own measurement pipeline) into the sync engine; updates the current latency and the drift history (drift = measured − calibrated baseline)
    - `playTestTone(frequency?: number, duration?: number): Promise<void>` - Play a test tone (defaults: 1000 Hz, 0.5 s)
    - `addEventListener(listener: SyncEventListener): void` - Add event listener
    - `removeEventListener(listener: SyncEventListener): void` - Remove event listener
@@ -256,7 +257,8 @@ The professional version with additional features. Includes all OSS methods plus
    - `startDriftCorrection(): void` - Start predictive drift correction
    - `stopDriftCorrection(): void` - Stop drift correction
    - `getDriftTrend(): number` - Current drift trend (seconds per second)
-   - `getCurrentDrift(): number` - Current drift in seconds
+   - `getCurrentDrift(): number` - Current drift in seconds (vs calibrated baseline)
+   - `updateLatency(measurement: LatencyMeasurement): void` - Feed an externally measured latency into the sync engine / drift corrector
    - `getTier(): 'pro'` - Tier identifier
 
 
@@ -354,13 +356,14 @@ The professional version with additional features. Includes all OSS methods plus
 ```typescript
 {
   chirpFrequency?: number;       // legacy alias for sweepEndFrequency (Hz)
-  chirpDuration?: number;        // sweep duration in seconds (default: 0.05)
+  chirpDuration?: number;        // sweep duration in seconds (default: 0.1)
   detectionTimeout?: number;     // per-round timeout in seconds (default: 5)
   calibrationRounds?: number;    // default: 3
   noiseGateThreshold?: number;   // legacy alias for minCorrelation
   sweepStartFrequency?: number;  // Hz (default: 500)
   sweepEndFrequency?: number;    // Hz (default: 8000)
-  maxLatency?: number;           // max expected round-trip in seconds (default: 0.5)
+  sweepRepeats?: number;         // sweeps per round, played as a chirp train and correlated as a whole (default: 3)
+  maxLatency?: number;           // max expected round-trip in seconds (default: 2.0 — Bluetooth round trips commonly exceed 1 s)
   minCorrelation?: number;       // min correlation peak to accept a round (default: 0.2)
   preRoll?: number;              // seconds between recording start and sweep (default: 0.05)
 }
@@ -382,8 +385,8 @@ The professional version with additional features. Includes all OSS methods plus
 
 The Pro loopback does not rely on wall-clock timestamps. Each round:
 
-1. Builds a **linear swept sine** (default 500 Hz → 8 kHz over 50 ms, Hann-windowed) as an `AudioBuffer`.
-2. Schedules it on the **AudioContext clock** at a known time `t0` (`source.start(t0)` — sample-accurate by design).
+1. Builds a **linear swept sine** (default 500 Hz → 8 kHz over 100 ms, Hann-windowed) as an `AudioBuffer`, repeated `sweepRepeats` times (default 3) as a chirp train so the correlation integrates more signal energy against ambient noise.
+2. Schedules each sweep on the **AudioContext clock** at known times starting at `t0` (`source.start(t0)` — sample-accurate by design).
 3. Records the microphone into a sample buffer, timestamping each capture block with `AudioContext.currentTime`.
 4. Finds the delay by **normalized cross-correlation** (`MathUtils.crossCorrelate`) of the recording against the sweep, with **parabolic interpolation around the peak for sub-sample resolution** (~0.02 ms at 48 kHz).
 5. Converts the peak lag to an audio time via the block timestamps: `latency = arrivalTime - t0`, then subtracts the browser-reported `inputLatency` (when available) to approximate output-only latency.
@@ -391,6 +394,8 @@ The Pro loopback does not rely on wall-clock timestamps. Each round:
 Multiple rounds (default 3) are averaged (median) and the confidence score combines the correlation peak with round-to-round consistency. A round is rejected if the correlation peak is below `minCorrelation` (default 0.2), e.g. in a noisy room.
 
 **What the number includes:** the acoustic loopback measures the round trip — output device (incl. Bluetooth stack) + air + microphone input. Subtracting `inputLatency` leaves an estimate of the true output latency. Practical accuracy is a few milliseconds (dominated by capture-block quantization and the mic path), which is typically far better than trusting `outputLatency` on Bluetooth, where Firefox/Chrome can underreport by hundreds of ms.
+
+**Requirement — the microphone must hear the output device.** The loopback only works when there is real acoustic coupling between what plays the sweep and what records it: laptop speakers + laptop mic, or a headset whose own microphone is the active input while the headset is the output. With Bluetooth headphones that have no microphone (or whose mic is not the selected input), the mic records only room noise, every round falls below `minCorrelation`, and the call fails with "No chirps detected" (the per-round console log includes the captured mic RMS so you can tell "mic heard nothing" from "signal too weak"). In that case use the pulse check (`performPulseCheck()`) or `test-bluetooth-latency.html` — that is exactly the scenario they are built for.
 
 ### Timing Notes for DAW Developers
 
@@ -415,6 +420,8 @@ Multiple rounds (default 3) are averaged (median) and the confidence score combi
   - Uses linear regression to predict future drift
   - Applies smooth corrections to maintain synchronization
   - Adapts correction strength based on measurement confidence
+
+**How to drive it:** drift correction never measures on its own (an automatic sweep would be audible). Start it, calibrate once to set the baseline, then re-measure on your own interval and let each result feed the corrector — e.g. `setInterval(() => sync.measureLatencyWithAcousticLoopback(), 15000)` (Pro) or `performPulseCheck()` (OSS). Each measurement is stored as `drift = measured − baseline`; `getDriftTrend()` is the regression slope of drift over time (seconds per second, needs ≥2 samples) and corrections (clamped to ±100 ms, applied once per second) start after 5 samples. On a stable Bluetooth link drift and trend stay at ≈ 0 — that is the healthy steady state, not a malfunction. A non-zero trend (e.g. +0.005 s/s = the delay growing 5 ms per second) is what shows up when the link degrades.
 
 
 ## Browser Support

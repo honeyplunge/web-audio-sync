@@ -39,6 +39,7 @@ export class SyncManager {
   private _isSyncing: boolean = false;
   private _isCalibrating: boolean = false;
   private currentLatency: number = 0;
+  private baselineLatency: number = 0;
   private currentDrift: number = 0;
   private syncOffset: number = 0;
   private eventListeners: Set<SyncEventListener> = new Set();
@@ -205,7 +206,6 @@ export class SyncManager {
       const result: LatencyCalibrationResult = await this.latencyDetector.calibrate();
 
       if (result?.success) {
-        this.currentLatency = result.latency;
         const measurement: LatencyMeasurement = {
           outputLatency: result.outputLatency ?? 0,
           inputLatency: result.inputLatency ?? 0,
@@ -215,7 +215,11 @@ export class SyncManager {
           method: 'pulse',
         };
 
-        this.driftCorrector.addMeasurement(measurement, this.currentLatency);
+        // Calibration defines the baseline; drift of the calibration sample
+        // itself is zero by definition
+        this.baselineLatency = result.latency;
+        this.driftCorrector.addMeasurement(measurement, this.baselineLatency);
+        this.currentLatency = result.latency;
       }
 
       this.logger.info('Calibration completed', { success: result?.success, latency: result?.latency });
@@ -277,6 +281,15 @@ export class SyncManager {
 
   getCurrentLatency (): number { return this.currentLatency; }
 
+  /**
+   * Set the baseline latency that drift is measured against.
+   * Called by calibrate(); exposed so integrators can re-baseline after
+   * intentionally changing the output device.
+   */
+  setBaselineLatency (latency: number): void {
+    this.baselineLatency = latency;
+  }
+
   addEventListener (listener: SyncEventListener): void { this.eventListeners.add(listener); }
   removeEventListener (listener: SyncEventListener): void { this.eventListeners.delete(listener); }
 
@@ -289,10 +302,26 @@ export class SyncManager {
   }
 
   private handleLatencyUpdate (measurement: LatencyMeasurement): void {
+    // Drift is the deviation from the calibrated baseline, not from the
+    // previous sample — otherwise a steadily growing latency would show
+    // zero trend
+    if (this.baselineLatency === 0) {
+      this.baselineLatency = measurement.totalLatency;
+    }
+
+    this.driftCorrector.addMeasurement(measurement, this.baselineLatency);
     this.currentLatency = measurement.totalLatency;
-    this.driftCorrector.addMeasurement(measurement, measurement.totalLatency);
     this.emitEvent('latency:update', measurement);
     if (this.options.onLatencyUpdate) {this.options.onLatencyUpdate(measurement);}
+  }
+
+  /**
+   * Feed an externally produced latency measurement (e.g. Pro acoustic
+   * loopback) into the sync manager: updates the current latency and the
+   * drift history (drift = measured - baseline).
+   */
+  updateLatency (measurement: LatencyMeasurement): void {
+    this.handleLatencyUpdate(measurement);
   }
 
   private handleError (error: Error): void {

@@ -31,6 +31,7 @@ export class AudioEngine {
   private oscillators: OscillatorNode[] = [];
   private analyzers: AnalyserNode[] = [];
   private scriptProcessors: ScriptProcessorNode[] = [];
+  private microphoneStream: MediaStream | null = null;
   private isRunning: boolean = false;
   private logger: Logger;
 
@@ -77,6 +78,10 @@ export class AudioEngine {
 
   getMasterGain (): GainNode | null {
     return this.masterGain;
+  }
+
+  getMicrophoneStream (): MediaStream | null {
+    return this.microphoneStream;
   }
 
   getCurrentTime (): number {
@@ -370,7 +375,16 @@ export class AudioEngine {
     }
 
     try {
-      const stream = await BrowserUtils.getUserMedia({ audio: true });
+      // Raw capture: echo cancellation would suppress the loopback sweep from
+      // the mic (it matches the output), noise suppression distorts it — both
+      // destroy the cross-correlation peak the loopback relies on
+      const stream = await BrowserUtils.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
+      });
 
       if (!stream) {
         this.logger.warn('No microphone access');
@@ -379,6 +393,8 @@ export class AudioEngine {
       }
 
       const source = this.context.createMediaStreamSource(stream);
+
+      this.microphoneStream = stream;
 
       return source;
     } catch (error) {

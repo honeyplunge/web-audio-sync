@@ -119,6 +119,19 @@
     <button id="stopBtn" disabled class="danger">Stop All</button>
   </div>
 
+  <details open style="font-size:0.8rem;color:#aaa;margin:0 0 14px">
+    <summary>Recommended button sequence (each button has a distinct role)</summary>
+    <ol style="margin:6px 0 0 18px;padding:0">
+      <li><b>1. Initialize</b> — must be first: creates the AudioContext from a user gesture. If the "Resume Audio" banner shows (common with Bluetooth), click it.</li>
+      <li><b>2. Play Test Tone</b> — sanity check that audio actually leaves through the current output device.</li>
+      <li><b>3. Start Sync</b> — starts the sync engine and the drift-corrector tick.</li>
+      <li><b>4. Detect Latency</b> — one-shot read of the browser's native <code>outputLatency</code> (often underreports on Bluetooth).</li>
+      <li><b>5. Calibrate</b> — native + pulse check: tap along in the tap area while it runs. Measures and sets the latency baseline.</li>
+      <li><b>6. Manual Tap Sync</b> — interactive tap-along demo; logs tap offsets but does not change the estimate.</li>
+      <li><b>Stop All</b> — stops sync.</li>
+    </ol>
+  </details>
+
   <div id="status-panel">
     <div class="stat"><span class="label">Status:</span> <span class="value" id="st-status">—</span></div>
     <div class="stat"><span class="label">Synced:</span> <span class="value" id="st-synced">—</span></div>

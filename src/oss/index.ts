@@ -37,6 +37,13 @@ export interface WebAudioSyncOSS {
   getSyncStatus(): SyncStatus;
   getCurrentLatency(): number;
 
+  // Feed an externally measured latency (own measurement pipeline) into the
+  // sync engine — updates current latency and the drift history
+  updateLatency(measurement: LatencyMeasurement): void;
+
+  // Set the baseline latency that drift is measured against (re-calibrate)
+  setBaselineLatency(latency: number): void;
+
   // Sync control
   startSync(): Promise<boolean>;
   stopSync(): Promise<void>;
@@ -181,6 +188,14 @@ export class WebAudioSyncOSSClass implements WebAudioSyncOSS {
     }
 
     return this.syncManager.getCurrentLatency();
+  }
+
+  updateLatency (measurement: LatencyMeasurement): void {
+    this.syncManager.updateLatency(measurement);
+  }
+
+  setBaselineLatency (latency: number): void {
+    this.syncManager.setBaselineLatency(latency);
   }
 
   // Sync control

@@ -33,13 +33,14 @@ export interface PulseCheckOptions {
 
 export interface AcousticLoopbackOptions {
   chirpFrequency?: number; // legacy alias for sweepEndFrequency (Hz)
-  chirpDuration?: number; // sweep duration in seconds (default: 0.05)
+  chirpDuration?: number; // sweep duration in seconds (default: 0.1)
   detectionTimeout?: number; // per-round timeout in seconds (default: 5)
   calibrationRounds?: number; // default: 3
   noiseGateThreshold?: number; // legacy alias for minCorrelation
   sweepStartFrequency?: number; // Hz (default: 500)
   sweepEndFrequency?: number; // Hz (default: chirpFrequency ?? 8000)
-  maxLatency?: number; // max expected round-trip in seconds (default: 0.5)
+  sweepRepeats?: number; // sweeps per round, played as a chirp train and correlated as a whole (default: 3)
+  maxLatency?: number; // max expected round-trip in seconds (default: 2.0 — Bluetooth round trips commonly exceed 1 s)
   minCorrelation?: number; // min normalized correlation to accept a round, 0-1 (default: 0.2)
   preRoll?: number; // seconds between recording start and sweep start (default: 0.05)
 }
