@@ -31,7 +31,7 @@
   "bugs": {
     "url": "https://github.com/honeyplunge/web-audio-sync/issues"
   },
-  "homepage": "https://web-audio-sync.com",
+  "homepage": "https://github.com/honeyplunge/web-audio-sync",
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@typescript-eslint/eslint-plugin": "^8.0.0",

@@ -84,7 +84,7 @@ We reserve the right to modify these Terms at any time. We will provide notice o
 ### 13. Contact Information
 
 For questions about these Terms, please contact us at:
-- Email: support@web-audio-sync.com
+- Email: support@honeyplunge.dev
 - Address: [honeyplunge Address]
 
 ---
@@ -172,7 +172,7 @@ Depending on your location, you may have the right to:
 - Data portability
 - Withdraw consent
 
-To exercise these rights, contact us at support@web-audio-sync.com.
+To exercise these rights, contact us at support@honeyplunge.dev.
 
 ### 8. GDPR Compliance
 
@@ -192,7 +192,7 @@ We may update this Privacy Policy from time to time. We will notify you of mater
 ### 11. Contact Information
 
 For questions about this Privacy Policy, please contact us at:
-- Email: support@web-audio-sync.com
+- Email: support@honeyplunge.dev
 - Address: [honeyplunge Address]
 
 ---
@@ -340,7 +340,7 @@ If any provision of this Agreement is held to be invalid or unenforceable, the r
 ### 20. Contact Information
 
 For questions about this License Agreement, please contact us at:
-- Email: billing@web-audio-sync.com
+- Email: billing@honeyplunge.dev
 - Address: [honeyplunge Address]
 
 ---
@@ -396,7 +396,7 @@ We may:
 ### 5. Reporting Violations
 
 To report violations of this policy, contact us at:
-- Email: support@web-audio-sync.com
+- Email: support@honeyplunge.dev
 
 ### 6. Changes to Policy
 
@@ -423,7 +423,7 @@ The Open Source version is provided free of charge. No refunds apply.
 
 ### 3. How to Request a Refund
 
-1. **Contact Support**: Email support@web-audio-sync.com
+1. **Contact Support**: Email support@honeyplunge.dev
 2. **Provide Information**:
    - Order number or transaction ID
    - Purchase date
@@ -652,7 +652,7 @@ This DPA shall be governed by the laws of [Your Jurisdiction].
 ### 15. Contact Information
 
 For questions about this DPA, please contact us at:
-- Email: support@web-audio-sync.com
+- Email: support@honeyplunge.dev
 - Address: [honeyplunge Address]
 
 ---
@@ -662,21 +662,21 @@ For any legal inquiries, please contact us:
 
 **honeyplunge**
 - Address: [honeyplunge Address]
-- Email: support@web-audio-sync.com
+- Email: support@honeyplunge.dev
 - Phone: [Your Phone Number]
-- Website: https://web-audio-sync.com
+- Website: https://github.com/honeyplunge/web-audio-sync
 
 **Data Protection Officer**
-- Email: support@web-audio-sync.com
+- Email: support@honeyplunge.dev
 
 **Support**
-- Email: support@web-audio-sync.com
+- Email: support@honeyplunge.dev
 
 **Abuse Reports**
-- Email: support@web-audio-sync.com
+- Email: support@honeyplunge.dev
 
 **Press**
-- Email: support@web-audio-sync.com
+- Email: support@honeyplunge.dev
 
 ---
 

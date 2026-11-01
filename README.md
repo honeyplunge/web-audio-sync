@@ -546,18 +546,18 @@ v1.0.0 (2026-11-01)
 
 ## Professional Support
 
-  - Email: support@web-audio-sync.com
+  - Email: support@honeyplunge.dev
   - Response time: < 24 hours (business days)
 
 ## Security
 
-If you discover a security vulnerability, please email support@web-audio-sync.com instead of using the public issue tracker.
+If you discover a security vulnerability, please email support@honeyplunge.dev instead of using the public issue tracker.
 
 Legal
 
-  - Privacy Policy: web-audio-sync.com/privacy
-  - Terms of Service: web-audio-sync.com/terms
-  - License Agreement: web-audio-sync.com/license
+  - Privacy Policy: https://github.com/honeyplunge/web-audio-sync/blob/main/LEGAL.md
+  - Terms of Service: https://github.com/honeyplunge/web-audio-sync/blob/main/LEGAL.md
+  - License Agreement: https://github.com/honeyplunge/web-audio-sync/blob/main/LICENSE
 
 ## Credits
 
