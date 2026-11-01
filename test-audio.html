@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebAudio Sync — Build Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #1a1a2e;
+      color: #e0e0e0;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    .subtitle { color: #888; font-size: 0.85rem; margin-bottom: 20px; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    button {
+      padding: 10px 18px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #3b82f6;
+      color: #fff;
+      transition: opacity 0.15s;
+    }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+    button.secondary { background: #4b5563; }
+    button.danger { background: #dc2626; }
+    button.success { background: #16a34a; }
+    #status-panel {
+      background: #16162e;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .stat { font-size: 0.85rem; }
+    .stat .label { color: #888; }
+    .stat .value { font-weight: 600; font-size: 1rem; }
+    .stat .value.good { color: #4ade80; }
+    .stat .value.warn { color: #fbbf24; }
+    .stat .value.bad { color: #f87171; }
+    #log {
+      background: #0d0d1a;
+      border-radius: 8px;
+      padding: 12px;
+      max-height: 280px;
+      overflow-y: auto;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .log-info { color: #60a5fa; }
+    .log-success { color: #4ade80; }
+    .log-error { color: #f87171; }
+    .log-warn { color: #fbbf24; }
+    #tap-area {
+      display: none;
+      text-align: center;
+      padding: 30px;
+      background: #16162e;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      user-select: none;
+      border: 2px dashed #3b82f6;
+    }
+    #tap-area.active { display: block; }
+    #tap-area .hint { color: #888; font-size: 0.8rem; margin-top: 8px; }
+    #suspendedBanner {
+      display: none;
+      background: #451a03;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      color: #fbbf24;
+      text-align: center;
+    }
+    #suspendedBanner button {
+      margin-left: 10px;
+      padding: 4px 12px;
+      font-size: 12px;
+      background: #f59e0b;
+      color: #1a1a2e;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>WebAudio Sync — Build Test</h1>
+  <div class="subtitle">Testing the compiled ESM build from <code>dist/esm/</code></div>
+
+  <div id="suspendedBanner">
+    Audio is suspended (common with Bluetooth). Click to resume:
+    <button id="resumeAudioBtn">Resume Audio</button>
+  </div>
+
+  <div class="subtitle">Open Source edition (OSS, free)</div>
+
+  <div class="btn-row">
+    <button id="initBtn">1. Initialize</button>
+    <button id="testToneBtn" disabled>2. Play Test Tone</button>
+    <button id="startSyncBtn" disabled>3. Start Sync</button>
+    <button id="detectLatencyBtn" disabled>4. Detect Latency</button>
+    <button id="calibrateBtn" disabled>5. Calibrate</button>
+    <button id="tapSyncBtn" disabled class="secondary">6. Manual Tap Sync</button>
+    <button id="stopBtn" disabled class="danger">Stop All</button>
+  </div>
+
+  <div id="status-panel">
+    <div class="stat"><span class="label">Status:</span> <span class="value" id="st-status">—</span></div>
+    <div class="stat"><span class="label">Synced:</span> <span class="value" id="st-synced">—</span></div>
+    <div class="stat"><span class="label">Latency:</span> <span class="value" id="st-latency">—</span></div>
+    <div class="stat"><span class="label">Drift:</span> <span class="value" id="st-drift">—</span></div>
+    <div class="stat"><span class="label">Quality:</span> <span class="value" id="st-quality">—</span></div>
+    <div class="stat"><span class="label">Version:</span> <span class="value" id="st-version">—</span></div>
+  </div>
+
+  <div id="tap-area">
+    <div>Tap / Click / Press Space in rhythm with the pulses</div>
+    <div class="hint">This measures your audio output latency</div>
+  </div>
+
+  <div id="log"></div>
+
+  <script type="module">
+    import {
+      createWebAudioSync,
+      isSupported,
+      getVersion,
+      getTierFeatures,
+    } from './dist/esm/index.js';
+
+    // ── UI helpers ──────────────────────────────────────────────
+    const $ = (id) => document.getElementById(id);
+    const logEl = $('log');
+
+    function log(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function setBtn(id, enabled) { $(id).disabled = !enabled; }
+
+    function updateStatus(status, version) {
+      $('st-status').textContent = status ? 'Active' : 'Inactive';
+      $('st-status').className = 'value ' + (status ? 'good' : '');
+      $('st-synced').textContent = status?.isSynced ? 'Yes' : 'No';
+      $('st-synced').className = 'value ' + (status?.isSynced ? 'good' : 'bad');
+      $('st-latency').textContent = status ? (status.currentLatency * 1000).toFixed(1) + ' ms' : '—';
+      $('st-drift').textContent = status ? (status.drift * 1000).toFixed(2) + ' ms' : '—';
+      $('st-quality').textContent = status?.quality ?? '—';
+      const q = status?.quality;
+      $('st-quality').className = 'value ' + (q === 'excellent' || q === 'good' ? 'good' : q === 'fair' ? 'warn' : q === 'poor' ? 'bad' : '');
+      $('st-version').textContent = version ?? '—';
+    }
+
+    // ── State ───────────────────────────────────────────────────
+    let sync = null;
+    let isRunning = false;
+
+    function resetAll() {
+      if (sync) {
+        sync.destroy().catch(() => {});
+        sync = null;
+      }
+      isRunning = false;
+      setBtn('testToneBtn', false);
+      setBtn('startSyncBtn', false);
+      setBtn('detectLatencyBtn', false);
+      setBtn('calibrateBtn', false);
+      setBtn('tapSyncBtn', false);
+      setBtn('stopBtn', false);
+      $('tap-area').classList.remove('active');
+      updateStatus(null, null);
+      $('suspendedBanner').style.display = 'none';
+      log('Reset. Click Initialize.', 'warn');
+    }
+
+    // Ensure AudioContext is running; resume if suspended
+    async function ensureAudioRunning() {
+      const ctx = sync ? sync.getAudioContext() : null;
+      if (ctx && ctx.state === 'suspended') {
+        await ctx.resume();
+        updateSuspendedBanner();
+      }
+    }
+
+    function updateSuspendedBanner() {
+      const ctx = sync ? sync.getAudioContext() : null;
+      const banner = $('suspendedBanner');
+      if (ctx && ctx.state === 'suspended') {
+        banner.style.display = 'block';
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    // Resume Audio button
+    $('resumeAudioBtn').addEventListener('click', async () => {
+      await ensureAudioRunning();
+      log('Audio resumed manually', 'success');
+    });
+
+    // ── 1. Initialize ───────────────────────────────────────────
+    $('initBtn').addEventListener('click', async () => {
+      try {
+        const supported = await isSupported();
+        if (!supported) {
+          log('WebAudio API is not supported in this browser', 'error');
+          return;
+        }
+
+        log('Initializing WebAudio Sync (OSS)...');
+        sync = createWebAudioSync();
+
+        const ok = await sync.initialize();
+        if (!ok) {
+          log('Initialization failed', 'error');
+          return;
+        }
+
+        const ctx = sync.getAudioContext();
+        const version = sync.getVersion();
+        log(`Initialized — sampleRate: ${ctx?.sampleRate ?? 'N/A'}, state: ${ctx?.state ?? 'N/A'}, version: ${version}`, 'success');
+
+        // Monitor AudioContext state changes (e.g. Bluetooth device connect/disconnect)
+        if (ctx) {
+          ctx.addEventListener('statechange', () => {
+            const state = ctx.state;
+            const outputLat = ctx.outputLatency !== undefined ? (ctx.outputLatency * 1000).toFixed(1) + 'ms' : 'N/A';
+            log(`AudioContext state changed: ${state} (outputLatency: ${outputLat})`, state === 'running' ? 'success' : 'warn');
+            updateSuspendedBanner();
+            if (state === 'suspended') {
+              log('AudioContext suspended — click the Resume Audio banner to restore', 'warn');
+            }
+          });
+        }
+
+        updateSuspendedBanner();
+
+        updateStatus(sync.getSyncStatus(), version);
+        setBtn('testToneBtn', true);
+        setBtn('startSyncBtn', true);
+        setBtn('detectLatencyBtn', true);
+        setBtn('calibrateBtn', true);
+        setBtn('tapSyncBtn', true);
+      } catch (err) {
+        log(`Init error: ${err.message}`, 'error');
+      }
+    });
+
+    // ── 2. Play Test Tone ───────────────────────────────────────
+    $('testToneBtn').addEventListener('click', async () => {
+      try {
+        await ensureAudioRunning();
+        log('Playing 1 kHz test tone (0.5s)...');
+        await sync.playTestTone(1000, 0.5);
+        log('Test tone played', 'success');
+      } catch (err) {
+        log(`Test tone error: ${err.message}`, 'error');
+      }
+    });
+
+    // ── 3. Start Sync ───────────────────────────────────────────
+    $('startSyncBtn').addEventListener('click', async () => {
+      try {
+        await ensureAudioRunning();
+        log('Starting sync...');
+        const ok = await sync.startSync();
+        if (ok) {
+          isRunning = true;
+          log('Sync started', 'success');
+          setBtn('stopBtn', true);
+          refreshStatus();
+        } else {
+          log('Failed to start sync', 'error');
+        }
+      } catch (err) {
+        log(`Start sync error: ${err.message}`, 'error');
+      }
+    });
+
+    // ── 4. Detect Latency ───────────────────────────────────────
+    $('detectLatencyBtn').addEventListener('click', async () => {
+      try {
+        await ensureAudioRunning();
+        const ctx = sync.getAudioContext();
+        const nativeOutputLat = ctx && ctx.outputLatency !== undefined ? (ctx.outputLatency * 1000).toFixed(1) : 'N/A';
+        log(`Detecting latency... (context: ${ctx?.state ?? 'N/A'}, native outputLatency: ${nativeOutputLat}ms)`);
+        const m = await sync.detectLatency();
+        log(`Latency: output=${(m.outputLatency * 1000).toFixed(1)}ms, input=${(m.inputLatency * 1000).toFixed(1)}ms, total=${(m.totalLatency * 1000).toFixed(1)}ms, confidence=${m.confidence.toFixed(2)}, method=${m.method}`, 'success');
+        refreshStatus();
+      } catch (err) {
+        log(`Latency detection error: ${err.message}`, 'error');
+      }
+    });
+
+    // ── 5. Calibrate ────────────────────────────────────────────
+    $('calibrateBtn').addEventListener('click', async () => {
+      try {
+        await ensureAudioRunning();
+        log('Calibrating (this may take a few seconds)...');
+        const result = await sync.calibrate();
+        log(`Calibration: success=${result.success}, latency=${(result.latency * 1000).toFixed(1)}ms, confidence=${result.confidence?.toFixed(2) ?? 'N/A'}`, result.success ? 'success' : 'warn');
+        refreshStatus();
+      } catch (err) {
+        log(`Calibration error: ${err.message}`, 'error');
+      }
+    });
+
+    // ── 6. Manual Tap Sync ──────────────────────────────────────
+    $('tapSyncBtn').addEventListener('click', async () => {
+      try {
+        await ensureAudioRunning();
+        const tapArea = $('tap-area');
+        tapArea.classList.add('active');
+        log('Manual tap sync started — tap in rhythm with the pulses', 'info');
+
+        let tapCount = 0;
+        sync.startManualTapSync({
+          pulseCount: 10,
+          pulseInterval: 1.0,
+          onTap: (timestamp, expectedTime) => {
+            tapCount++;
+            const offset = expectedTime !== undefined ? ((timestamp - expectedTime) * 1000).toFixed(1) : 'N/A';
+            log(`Tap ${tapCount}/10 — offset: ${offset} ms`);
+          },
+        });
+
+        setTimeout(() => tapArea.classList.remove('active'), 12000);
+      } catch (err) {
+        log(`Tap sync error: ${err.message}`, 'error');
+      }
+    });
+
+    // ── Stop All ────────────────────────────────────────────────
+    $('stopBtn').addEventListener('click', async () => {
+      try {
+        log('Stopping...');
+        await sync.stopSync();
+        isRunning = false;
+        $('tap-area').classList.remove('active');
+        log('Stopped', 'success');
+        setBtn('stopBtn', false);
+        refreshStatus();
+      } catch (err) {
+        log(`Stop error: ${err.message}`, 'error');
+      }
+    });
+
+    // ── Helpers ─────────────────────────────────────────────────
+    function refreshStatus() {
+      if (!sync) return;
+      try {
+        updateStatus(sync.getSyncStatus(), sync.getVersion());
+      } catch {}
+    }
+
+    // ── Startup info ────────────────────────────────────────────
+    log(`Library version: ${getVersion()}`);
+    log(`Tiers: ${Object.keys(getTierFeatures()).join(', ')}`);
+    log(`Browser: ${navigator.userAgent}`);
+    isSupported().then(ok => {
+      log(`WebAudio supported: ${ok}`, ok ? 'success' : 'error');
+    });
+  </script>
+</body>
+</html>

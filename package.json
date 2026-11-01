@@ -1,0 +1,65 @@
+{
+  "name": "web-audio-sync",
+  "version": "1.0.0",
+  "description": "WebAudio utility for precise Bluetooth audio synchronization with output latency detection and interactive pulse checking (open source edition)",
+  "main": "dist/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc && tsc -p tsconfig.esm.json && node scripts/fix-esm-imports.mjs",
+    "lint": "eslint src/**/*.ts",
+    "test": "jest",
+    "prepublishOnly": "npm run build",
+    "docs": "typedoc --out docs src/index.ts"
+  },
+  "keywords": [
+    "webaudio",
+    "audio",
+    "sync",
+    "synchronization",
+    "bluetooth",
+    "latency",
+    "timing",
+    "pulse"
+  ],
+  "author": "honeyplunge",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/honeyplunge/web-audio-sync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/honeyplunge/web-audio-sync/issues"
+  },
+  "homepage": "https://web-audio-sync.com",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typedoc": "^0.25.13",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "funding": {
+    "type": "individual",
+    "url": "https://polar.sh/web-audio-sync"
+  }
+}
