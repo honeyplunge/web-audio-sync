@@ -464,7 +464,7 @@ Multiple rounds (default 3) are averaged (median) and the confidence score combi
 
 ### Buy on Polar.sh
 
-[https://polar.sh/web-audio-sync](https://polar.sh/web-audio-sync)
+[Buy WebAudio Sync Pro — €199 one-time](https://polar.sh/honeyplunge/products/ee6ebd51-7aac-4df1-86d8-c79cbbc29c18)
 
 ## License Key Management
 
