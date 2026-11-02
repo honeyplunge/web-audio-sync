@@ -1,6 +1,6 @@
 {
   "name": "web-audio-sync",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "WebAudio utility for precise Bluetooth audio synchronization with output latency detection and interactive pulse checking (open source edition)",
   "main": "dist/index.js",
   "module": "dist/esm/index.js",
