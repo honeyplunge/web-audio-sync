@@ -34,7 +34,7 @@ npm install web-audio-sync
 
 ### Professional version
 
-The Pro edition is a **separate private package, `web-audio-sync-pro`** — not on the public npm registry. It depends on `web-audio-sync`, which npm installs automatically. After purchasing on Polar.sh you receive a download link for the tarball plus a Keygen.sh license key:
+The Pro edition is a **separate private package, `web-audio-sync-pro`** — not on the public npm registry. It depends on `web-audio-sync`, which npm installs automatically. After purchasing on Polar.sh you receive a download link for the tarball plus a perpetual license key (`hpl-…`) shown on the post-purchase page:
 
 ```bash
 # From your purchase download:
@@ -42,11 +42,11 @@ npm install ./web-audio-sync-pro-<version>.tgz
 
 # 1. Imports come from the pro package (it re-exports the full OSS API too):
 #    import { createWebAudioSyncPro } from 'web-audio-sync-pro';
-# 2. Pass your Keygen.sh license key:
-#    const sync = createWebAudioSyncPro({ licenseKey: 'YOUR_KEYGEN_LICENSE_KEY' });
+# 2. Pass your license key (from the post-purchase success page):
+#    const sync = createWebAudioSyncPro({ licenseKey: 'hpl-…', licenseApiUrl: 'https://hpl-licenses.billing-d6e.workers.dev', licenseAccountId: 'hpl' });
 ```
 
-Pro methods validate the license key against Keygen.sh at runtime and refuse to run without a valid Pro license.
+Pro methods validate the license key against the license server at runtime and refuse to run without a valid Pro license.
 
 ## Usage
 
@@ -114,8 +114,9 @@ import { createWebAudioSyncPro } from 'web-audio-sync-pro';
 
 // Create Pro instance with license key — returns WebAudioSyncPro directly
 const sync = createWebAudioSyncPro({
-  licenseKey: 'YOUR_LICENSE_KEY_HERE',   // test-… key while Keygen is in test mode
-  licenseAccountId: 'YOUR_KEYGEN_ACCOUNT_ID',
+  licenseKey: 'hpl-…',   // key from the license server success page
+  licenseApiUrl: 'https://hpl-licenses.billing-d6e.workers.dev',
+  licenseAccountId: 'hpl',
 });
 
 async function initializePro() {
@@ -456,7 +457,7 @@ Multiple rounds (default 3) are averaged (median) and the confidence score combi
      -  Predictive drift correction
      -  Technical support
   - Distribution: Polar.sh (EU Merchant of Record — VAT handled)
-  - License Management: Keygen.sh
+  - License Management: self-hosted license server (Cloudflare Worker)
 
 ## Distribution
 
@@ -467,14 +468,14 @@ Multiple rounds (default 3) are averaged (median) and the confidence score combi
 
 ## License Key Management
 
-We use Keygen.sh for license key management and validation. There is no local/backdoor acceptance: the Pro build validates every key against the Keygen API (`POST /v1/accounts/<accountId>/licenses/actions/validate`, the license key sent as the bearer credential — Keygen's standard client-side pattern). In **Keygen test mode**, `test-…` keys validate against the same endpoint, so you can test Pro features without a real purchase.
+Licenses are validated over HTTP against a license server — by default the self-hosted Cloudflare Worker in `license-server/` (free tier; any Keygen.sh-compatible endpoint also works via `licenseApiUrl`). There is no local/backdoor acceptance: the Pro build sends the license key as the bearer credential to `POST {licenseApiUrl}/v1/accounts/<accountId>/licenses/actions/validate` and trusts only the server's `meta.valid === true` response.
 
 ### Validation Flow
 
    - User purchases the Pro license on Polar.sh (one-time, €199)
-   - Polar webhook (`order.paid`) creates the license in Keygen.sh, which delivers the key
-   - The app validates the key with the Keygen.sh API on `setLicenseKey()` / `initialize()`
-   - Keygen.sh confirms validity and returns license details (status, expiry, product, metadata)
+   - Polar webhook (`order.paid`) tells the license server to create a perpetual `hpl-…` key; the success page reveals it to the customer
+   - The app validates the key against the license server on `setLicenseKey()` / `initialize()`
+   - The server confirms validity and returns license details (status, metadata); refunds suspend the key
 
 ### Integration Example
 
@@ -482,10 +483,11 @@ We use Keygen.sh for license key management and validation. There is no local/ba
 
 import { createWebAudioSyncPro } from 'web-audio-sync-pro';
 
-// licenseAccountId = your Keygen account ID (dashboard → Settings → Account)
+// licenseApiUrl = your license server (Cloudflare Worker, see license-server/)
 const sync = createWebAudioSyncPro({
-  licenseKey: 'YOUR_KEY',          // test-… key while Keygen is in test mode
-  licenseAccountId: 'YOUR_ACCOUNT_ID',
+  licenseKey: 'hpl-…',              // key from the post-purchase success page
+  licenseApiUrl: 'https://hpl-licenses.billing-d6e.workers.dev',
+  licenseAccountId: 'hpl',          // path segment only — ignored by the worker
 });
 
 await sync.initialize();
@@ -496,7 +498,7 @@ if (sync.getLicenseStatus().isValid) {
 
 // Standalone manager is also exported:
 // import { LicenseManager } from 'web-audio-sync-pro';
-// new LicenseManager({ licenseKey, accountId, productId: 'web-audio-sync-pro' });
+// new LicenseManager({ licenseKey, accountId: 'hpl', apiUrl: 'https://hpl-licenses.billing-d6e.workers.dev/v1', productId: 'web-audio-sync-pro' });
 // await licenseManager.validate();
 // licenseManager.hasFeature('acoustic_loopback');
 ```
@@ -569,7 +571,7 @@ Legal
 ## Credits
 
   - WebAudio API: MDN Web Docs
-  - Keygen.sh: License Management
+  - License server: Cloudflare Worker (free tier), see `license-server/`
   - Polar.sh: Merchant of Record (payments, VAT, digital delivery)
 
 ## Sponsors
