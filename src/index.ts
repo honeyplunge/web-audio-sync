@@ -70,7 +70,7 @@ export async function hasMicrophoneAccess (): Promise<boolean> {
  * Get library version
  */
 export function getVersion (): string {
-  return '1.0.0';
+  return '1.0.1';
 }
 
 /**

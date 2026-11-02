@@ -114,7 +114,8 @@ import { createWebAudioSyncPro } from 'web-audio-sync-pro';
 
 // Create Pro instance with license key — returns WebAudioSyncPro directly
 const sync = createWebAudioSyncPro({
-  licenseKey: 'YOUR_LICENSE_KEY_HERE',
+  licenseKey: 'YOUR_LICENSE_KEY_HERE',   // test-… key while Keygen is in test mode
+  licenseAccountId: 'YOUR_KEYGEN_ACCOUNT_ID',
 });
 
 async function initializePro() {
@@ -466,39 +467,38 @@ Multiple rounds (default 3) are averaged (median) and the confidence score combi
 
 ## License Key Management
 
-We use Keygen.sh for license key management and validation.
+We use Keygen.sh for license key management and validation. There is no local/backdoor acceptance: the Pro build validates every key against the Keygen API (`POST /v1/accounts/<accountId>/licenses/actions/validate`, the license key sent as the bearer credential — Keygen's standard client-side pattern). In **Keygen test mode**, `test-…` keys validate against the same endpoint, so you can test Pro features without a real purchase.
 
 ### Validation Flow
 
-   - User purchases license on Polar.sh
-   - Keygen.sh generates and delivers license key
-   - Your application validates key with Keygen.sh API
-   -  Keygen.sh confirms validity and returns license details
+   - User purchases the Pro license on Polar.sh (one-time, €199)
+   - Polar webhook (`order.paid`) creates the license in Keygen.sh, which delivers the key
+   - The app validates the key with the Keygen.sh API on `setLicenseKey()` / `initialize()`
+   - Keygen.sh confirms validity and returns license details (status, expiry, product, metadata)
 
 ### Integration Example
 
 ```typescript
 
-import { LicenseManager } from 'web-audio-sync';
+import { createWebAudioSyncPro } from 'web-audio-sync-pro';
 
-const licenseManager = new LicenseManager({
-  licenseKey: 'YOUR_KEY',
-  productId: 'web-audio-sync-pro',
-  apiUrl: 'https://api.keygen.sh/v1',
-  onLicenseChange: (status) => {
-    console.log('License status:', status);
-  }
+// licenseAccountId = your Keygen account ID (dashboard → Settings → Account)
+const sync = createWebAudioSyncPro({
+  licenseKey: 'YOUR_KEY',          // test-… key while Keygen is in test mode
+  licenseAccountId: 'YOUR_ACCOUNT_ID',
 });
 
-// Validate license
-const isValid = await licenseManager.validate();
+await sync.initialize();
 
-// Check features
-if (licenseManager.hasFeature('acoustic_loopback')) {
-  // Enable Pro features
+if (sync.getLicenseStatus().isValid) {
+  // Pro features unlocked: measureLatencyWithAcousticLoopback(), startDriftCorrection(), …
 }
 
-
+// Standalone manager is also exported:
+// import { LicenseManager } from 'web-audio-sync-pro';
+// new LicenseManager({ licenseKey, accountId, productId: 'web-audio-sync-pro' });
+// await licenseManager.validate();
+// licenseManager.hasFeature('acoustic_loopback');
 ```
 
 
