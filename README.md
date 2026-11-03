@@ -9,6 +9,8 @@
 
 WebAudio Sync is a powerful library that helps you achieve perfect audio synchronization in web applications, especially when dealing with Bluetooth devices that introduce variable latency. It also compensates delay from TVs/soundbars (A/V sync), car head units, USB DACs and audio interfaces, and helps keep multiple devices playing in sync. Ideal for rhythm games and music apps where player taps must be judged against a beat the user actually hears — on Bluetooth headphones that beat arrives late, and WebAudio Sync measures the real delay so your game can compensate.
 
+> **This GitHub repository is the open-source (OSS) edition** (`npm install web-audio-sync`). To unlock the Pro features (acoustic loopback, predictive drift correction), get **WebAudio Sync Pro** here: [Buy WebAudio Sync Pro — €199 one-time](https://buy.polar.sh/polar_cl_reU3RSYeSDkexCE4U7JwTS9N7fRcKA4pTyCam1KKBsl) — see the *Professional version* section below for setup instructions.
+
 ## Features
 
 ### Open Source (Free)
