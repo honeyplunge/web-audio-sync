@@ -1,6 +1,6 @@
 {
   "name": "web-audio-sync",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "WebAudio utility for precise Bluetooth audio synchronization with output latency detection and interactive pulse checking (open source edition)",
   "main": "dist/index.js",
   "module": "dist/esm/index.js",
@@ -60,6 +60,6 @@
   },
   "funding": {
     "type": "individual",
-    "url": "https://polar.sh/web-audio-sync"
+    "url": "https://buy.polar.sh/polar_cl_reU3RSYeSDkexCE4U7JwTS9N7fRcKA4pTyCam1KKBsl"
   }
 }

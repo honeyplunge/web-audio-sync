@@ -238,7 +238,7 @@ export class WebAudioSyncOSSClass implements WebAudioSyncOSS {
 
   // Version info
   getVersion (): string {
-    return '1.0.1';
+    return '1.0.2';
   }
 
   getTier (): 'oss' {
